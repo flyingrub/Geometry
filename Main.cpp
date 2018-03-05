@@ -20,6 +20,9 @@
 #include "Point.hpp"
 #include "Vector.hpp"
 
+#define PI 3.14159265
+
+
 // D�finition de la taille de la fen�tre
 #define WIDTH  480
 
@@ -47,6 +50,7 @@ using namespace std;
 
 vector<Point> control_points;
 double precision = 10;
+double precision2 = 10;
 
 // Ent�tes de fonctions
 void init_scene();
@@ -99,6 +103,25 @@ GLvoid initGL()
 {
 	glClearColor(RED, GREEN, BLUE, ALPHA);
 	glPointSize(5.0);
+}
+
+void lumiere() {
+	glEnable(GL_DEPTH_TEST); 	// Active le test de profondeur
+	glEnable(GL_LIGHTING); 	// Active l'éclairage
+	glEnable(GL_LIGHT0);
+	glEnable(GL_COLOR_MATERIAL);
+
+	// Create light components.
+	GLfloat ambientLight[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	GLfloat diffuseLight[] = { 0.8f, 0.8f, 0.8, 1.0f };
+	GLfloat specularLight[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+	GLfloat position[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	// Assign created components to GL_LIGHT0.
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
 }
 
 // Initialisation de la scene. Peut servir � stocker des variables devotre programme
@@ -176,16 +199,24 @@ GLvoid mouse_motion(int x,int y) {
 GLvoid special_window_key(int key, int x, int y) {
 	switch (key) {
 
+	case GLUT_KEY_UP:
+		precision2 ++;
+		break;
+
+	case GLUT_KEY_DOWN:
+		if (precision2 > 0) precision2 --;
+		break;
+
 	case GLUT_KEY_LEFT:
-		if (precision > 2) precision --;
-		glutPostRedisplay();
+		if (precision > 0) precision --;
 		break;
 
 	case GLUT_KEY_RIGHT:
 		precision++;
-		glutPostRedisplay();
 		break;
 	}
+	glutPostRedisplay();
+
 }
 
 GLvoid window_key(unsigned char key, int x, int y)
@@ -194,43 +225,37 @@ GLvoid window_key(unsigned char key, int x, int y)
 
 	case KEY_Z:
 		camera.y += 0.1;
-		glutPostRedisplay();
 		break;
 
 	case KEY_S:
 		camera.y -= 0.1;
-		glutPostRedisplay();
 		break;
 
 	case KEY_Q:
 		camera.x -= 0.1;
-		glutPostRedisplay();
 		break;
 
 	case KEY_D:
 		camera.x += 0.1;
-		glutPostRedisplay();
 		break;
 
 	case KEY_A:
 		camera.z -= 0.1;
-		glutPostRedisplay();
 		break;
 
 	case KEY_E:
 		camera.z += 0.1;
-		glutPostRedisplay();
 		break;
 
 	case KEY_ESC:
 		init_scene();
-		glutPostRedisplay();
 		break;
 
 	default:
 		printf ("La touche %d n'est pas active.\n", key);
 		break;
 	}
+	glutPostRedisplay();
 }
 
 // UTILS
@@ -240,6 +265,20 @@ double fact(int n) {
 		factorial *= i;
 	}
 	return factorial;
+}
+
+
+vector<vector<Point>> inverse(vector<vector<Point>> surface) {
+	vector<vector<Point>> controlLast;
+	for (int i=0; i < surface[0].size(); i++) {
+		vector<Point> line;
+		for (int j = 0; j < surface.size(); j++) {
+			Point controlPoint = surface[j][i];
+			line.push_back(controlPoint);
+		}
+		controlLast.push_back(line);
+	}
+	return controlLast;
 }
 
 
@@ -262,7 +301,7 @@ vector<vector<Point>> surfaceCylindrique(vector<Point> bezier, Vector droite, in
 
 vector<vector<Point>> surfaceReglee(vector<Point> bezier1, vector<Point> bezier2, int precision) {
 	vector<vector<Point>> res;
-	for (int i = 0; i<=precision; i++) {
+	for (int i = 0; i <= precision; i++) {
 		vector<Point> line;
 		double u = (double) i / (double) precision;
 		for (int j = 0; j < bezier1.size(); j++) {
@@ -333,53 +372,8 @@ Point* bezierCurveByBernstein(Point* controlPoints, long nbControlPoint, long pr
 	return points;
 }
 
-vector<vector<Point>> bezierSurfaceByCasteljau(vector<Point> controlDirectrice, vector<Point> controlGeneratrice, int precision) {
-	Point* generatrice = bezierCurveByCasteljau(&controlGeneratrice[0], controlGeneratrice.size(), precision);
-	Point* directrice = bezierCurveByCasteljau(&controlDirectrice[0], controlDirectrice.size(), precision);
-	vector<vector<Point>> directrices;
-	for (int i = 0; i<=precision; i++) {
-		vector<Point> line;
-		double u = (double) i / (double) precision;
-		for (int j = 0; j <= precision; j++) {
-			Point p;
-			p.x = directrice[j].x + generatrice[i].x * u;
-			p.y = directrice[j].y + generatrice[i].y * u;
-			p.z = directrice[j].z + generatrice[i].z * u;
-			line.push_back(p);
-		}
-		directrices.push_back(line);
-	}
-	//drawSurface(directrices);
-
-	// Inverse
-	vector<vector<Point>> controlLast;
-	for (int i=0; i < directrices.size(); i++) {
-		vector<Point> line;
-		for (int j = 0; j < directrices[i].size(); j++) {
-			Point controlPoint = directrices[j][i];
-			line.push_back(controlPoint);
-		}
-		controlLast.push_back(line);
-	}
-
-	Point* res[precision+1];
-	for (int i=0; i < controlLast.size(); i++) {
-		res[i] = bezierCurveByCasteljau(&controlLast[i][0], controlLast[i].size(), precision);
-	}
-
-	vector<vector<Point>> resVect;
-	for (int i=0; i < controlLast.size(); i++) {
-		vector<Point> line;
-		for (int j=0; j < controlLast[i].size(); j++) {
-			line.push_back(res[i][j]);
-		}
-		resVect.push_back(line);
-	}
-	cout << resVect[1].size() << endl;
-	return resVect;
-}
-
 // HELPERS
+
 void drawPoint(Point p) {
 	glBegin(GL_POINTS);
 		glVertex3f(p.x, p.y, p.z);
@@ -418,18 +412,174 @@ void drawCurve(Point *points, long nbPoints) {
 	glEnd();
 }
 
+void drawControlPoints(vector<Point> points) {
+	glColor3f(1.0, 0, 0);
+	drawCurve(&points[0], points.size());
+	drawPoints(&points[0], points.size());
+}
+
 void drawSurface(vector<vector<Point>> surface) {
 	for (int i=0; i < surface.size(); i++) {
 		drawCurve(&surface[i][0], surface[i].size());
 	}
 }
 
-void drawControlPoints(vector<Point> points) {
-	glColor3f(1.0, 0, 0);
-	drawCurve(&points[0], points.size());
-	drawPoints(&points[0], points.size());
+vector<vector<Point>> bezierSurfaceByCasteljau(vector<Point> controlDirectrice, vector<Point> controlGeneratrice, int precision) {
+	Point* generatrice = bezierCurveByCasteljau(&controlGeneratrice[0], controlGeneratrice.size(), precision);
+	Point* directrice = bezierCurveByCasteljau(&controlDirectrice[0], controlDirectrice.size(), precision);
+	vector<vector<Point>> directrices;
+	for (int i = 0; i<=precision; i++) {
+		vector<Point> line;
+		double u = (double) i / (double) precision;
+		for (int j = 0; j <= precision; j++) {
+			Point p;
+			p.x = directrice[j].x + generatrice[i].x * u;
+			p.y = directrice[j].y + generatrice[i].y * u;
+			p.z = directrice[j].z + generatrice[i].z * u;
+			line.push_back(p);
+		}
+		directrices.push_back(line);
+	}
+	drawSurface(directrices);
+
+	// Inverse
+	vector<vector<Point>> controlLast;
+	for (int i=0; i < directrices.size(); i++) {
+		vector<Point> line;
+		for (int j = 0; j < directrices[i].size(); j++) {
+			Point controlPoint = directrices[j][i];
+			line.push_back(controlPoint);
+		}
+		controlLast.push_back(line);
+	}
+
+	Point* res[precision+1];
+	for (int i=0; i < controlLast.size(); i++) {
+		res[i] = bezierCurveByCasteljau(&controlLast[i][0], controlLast[i].size(), precision);
+	}
+
+	vector<vector<Point>> resVect;
+	for (int i=0; i < controlLast.size(); i++) {
+		vector<Point> line;
+		for (int j=0; j < controlLast[i].size(); j++) {
+			line.push_back(res[i][j]);
+		}
+		resVect.push_back(line);
+	}
+	return resVect;
 }
-	//
+
+void displayCone(int rayon, int hauteur, int nbMeridien) {
+	vector<Point> circle;
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < nbMeridien; i++) {
+		double ang = 2 * PI / nbMeridien * i;
+		double x = cos(ang) * rayon;
+		double y = sin(ang) * rayon;
+		circle.push_back(Point(x,y,0));
+		glVertex3f(x,y,0);
+	}
+	glEnd();
+
+	for (int i = 0; i < circle.size(); i++) {
+		glBegin(GL_TRIANGLES);
+		Point p1 = Point(0,0,hauteur);
+		Point p3,p4;
+		p3 = circle[i];
+		if (i == circle.size() -1) {
+			p4 = circle[0];
+		} else {
+			p4 = circle[i+1];
+		}
+		glVertex3f(p1.x,p1.y,p1.z);
+		glVertex3f(p3.x,p3.y,p3.z);
+		glVertex3f(p4.x,p4.y,p4.z);
+		glEnd();
+	}
+}
+
+void displayCylindre(int rayon, int hauteur, int nbMeridien) {
+	vector<Point> circle;
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < nbMeridien; i++) {
+		double ang = 2 * PI / nbMeridien * i;
+		double x = cos(ang) * rayon;
+		double y = sin(ang) * rayon;
+		circle.push_back(Point(x,y,0));
+		glVertex3f(x,y,0);
+	}
+	glEnd();
+
+	vector<Point> circle2;
+
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < nbMeridien; i++) {
+		Point p = circle[i];
+		circle2.push_back(Point(p.x, p.y,hauteur));
+		glVertex3f(p.x, p.y, hauteur);
+	}
+	glEnd();
+
+	for (int i = 0; i < circle.size(); i++) {
+		glBegin(GL_QUADS);
+		Point p1 = circle[i];
+		Point p2 = circle2[i];
+		Point p3,p4;
+		if (i == circle.size() -1) {
+			p3 = circle[0];
+			p4 = circle2[0];
+		} else {
+			p3 = circle[i+1];
+			p4 = circle2[i+1];
+		}
+		glVertex3f(p1.x,p1.y,p1.z);
+		glVertex3f(p3.x,p3.y,p3.z);
+		glVertex3f(p4.x,p4.y,p4.z);
+		glVertex3f(p2.x,p2.y,p2.z);
+		glEnd();
+	}
+}
+
+void displaySphere(double rayon, double nbMeridien, double nbParallele)  {
+	lumiere();
+	vector<vector<Point>> sphere;
+	for (int j=0; j<nbMeridien; j++) {
+		double theta = 2.0 * PI / nbMeridien * j;
+		vector<Point> circle;
+		for (int i = 0; i <= nbParallele; i++) {
+			double phi = PI / nbParallele * i;
+			double x = sin(phi) * rayon * cos(theta);
+			double y = sin(phi) * rayon * sin(theta);
+			double z = cos(phi) * rayon;
+			circle.push_back(Point(x,y,z));
+		}
+		sphere.push_back(circle);
+	}
+	sphere.push_back(sphere[0]);
+
+	for (int i=0; i < sphere.size(); i++) {
+		for (int j=0; j<sphere[i].size(); j++) {
+			glBegin(GL_QUADS);
+			int k = (i == sphere.size() -1) ? 0 : i+1;
+			int l = (j == sphere[i].size() - 1) ? 0 : j+1;
+			Point p1 = sphere[i][j];
+			Point p2 = sphere[k][j];
+			Point p3 = sphere[i][l];
+			Point p4 = sphere[k][l];
+
+			glVertex3f(p4.x,p4.y,p4.z);
+			glVertex3f(p2.x,p2.y,p2.z);
+			glVertex3f(p1.x,p1.y,p1.z);
+			glVertex3f(p3.x,p3.y,p3.z);
+
+			glEnd();
+		}
+	}
+	glColor3f(1.0,0,0);
+	drawSurface(sphere);
+	drawSurface(inverse(sphere));
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Fonction que vous allez modifier afin de dessiner
@@ -485,26 +635,32 @@ void render_surface_param() {
 
 void render_surface_regle() {
 	glColor3f(1.0, 1.0, 1.0);
-	Point* points;
-	control_points = vector<Point>();
-	control_points.push_back(Point(0,0,0));
-	control_points.push_back(Point(1,1,0));
-	control_points.push_back(Point(1.5,-1.5,0));
-	points = bezierCurveByCasteljau(&control_points[0], control_points.size(), precision);
-	control_points = vector<Point>();
+	Point* points1;
+	vector<Point> control_points1 = vector<Point>();
+	control_points1.push_back(Point(2,0,2));
+	control_points1.push_back(Point(-1,2,1));
+	control_points1.push_back(Point(1.5,1,0));
+	points1 = bezierCurveByCasteljau(&control_points1[0], control_points1.size(), precision);
+	vector<Point>  control_points2 = vector<Point>();
 	Point* points2;
-	control_points.push_back(Point(0,0,0));
-	control_points.push_back(Point(1,2,-1));
-	control_points.push_back(Point(1.5,1.5,0));
-	points2 = bezierCurveByCasteljau(&control_points[0], control_points.size(), precision);
+	control_points2.push_back(Point(0,0,0));
+	control_points2.push_back(Point(1,2,-1));
+	control_points2.push_back(Point(1.5,1.5,0));
+	points2 = bezierCurveByCasteljau(&control_points2[0], control_points2.size(), precision);
 	vector<Point> pointsVect;
 	vector<Point> pointsVect2;
 	for (int i=0; i < precision + 1;i++) {
-		pointsVect.push_back(points[i]);
+		pointsVect.push_back(points1[i]);
 		pointsVect2.push_back(points2[i]);
 	}
+
+	glColor3f(1.0, 1.0, 1.0);
 	vector<vector<Point>> res = surfaceReglee(pointsVect, pointsVect2, precision);
 	drawSurface(res);
+	drawSurface(inverse(res));
+	glColor3f(1.0, 0, 0);
+	drawCurve(&pointsVect[0], pointsVect.size());
+	drawCurve(&pointsVect2[0], pointsVect2.size());
 }
 
 void render_surface_bezier() {
@@ -525,34 +681,7 @@ void render_surface_bezier() {
 	drawSurface(res);
 }
 
-void render_scene()
-{
-	// Reset transformations
-	glLoadIdentity();
-	gluPerspective(90.0f,(GLfloat)glutGet(GLUT_WINDOW_WIDTH)/(GLfloat)glutGet(GLUT_WINDOW_HEIGHT), 0.5f, 3000.0f);
-
-	// Set the camera
-	gluLookAt(camera.x,camera.y,camera.z, 0,0,0, 0,1,0);
-	//D�finition de la couleur
-	glColor3f(1.0, 1.0, 1.0);
-
-	Point origin = Point(0,0,0);
-	Vector x = Vector(1,0,0);
-	Vector y = Vector(0,1,0);
-	Vector z = Vector(0,0,1);
-	glColor3f(1.0, 0.0, 0.0);
-	drawLine(origin, x); // red
-	glColor3f(0.0, 1.0, 0.0);
-	drawLine(origin, y); // green
-	glColor3f(0.0, 0.0, 1.0);
-	drawLine(origin, z); // blue
-
-	//drawLine(clicPoint, dragVector);
-	//render_curve_bezier(true);
-	//render_surface_param();
-	// render_surface_regle();
-	render_surface_bezier();
-	return;
+void tp1() {
 
 	Point a(-1,-1, 0);
 	Point b(1,1,0);
@@ -588,5 +717,38 @@ void render_scene()
 			glVertex3f(1, 1, 0);
 		glEnd();
 	*/
+}
+
+void render_scene()
+{
+	// Reset transformations
+	glLoadIdentity();
+	gluPerspective(90.0f,(GLfloat)glutGet(GLUT_WINDOW_WIDTH)/(GLfloat)glutGet(GLUT_WINDOW_HEIGHT), 0.5f, 3000.0f);
+
+	// Set the camera
+	gluLookAt(camera.x,camera.y,camera.z, 0,0,0, 0,1,0);
+	//D�finition de la couleur
+	glColor3f(1.0, 1.0, 1.0);
+
+	Point origin = Point(0,0,0);
+	Vector x = Vector(1,0,0);
+	Vector y = Vector(0,1,0);
+	Vector z = Vector(0,0,1);
+	glColor3f(1.0, 0.0, 0.0);
+	drawLine(origin, x); // red
+	glColor3f(0.0, 1.0, 0.0);
+	drawLine(origin, y); // green
+	glColor3f(0.0, 0.0, 1.0);
+	drawLine(origin, z); // blue
+
+	// drawLine(clicPoint, dragVector);
+	// render_curve_bezier(true);
+	// render_surface_param();
+	// render_surface_regle();
+	// render_surface_bezier();
+	// displayCylindre(1, 20, 10);
+	displayCone(1, 20, 10);
+	// displaySphere(1,precision,precision2);
+	return;
 }
 
