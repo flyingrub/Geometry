@@ -66,6 +66,14 @@ Vector Vector::FromPoint(Point a, Point b) {
     return res;
 }
 
+Point Vector::middle(Point p) {
+    Point res;
+    res.x = p.x + this->x / 2;
+    res.y = p.y + this->y / 2;
+    res.z = p.z + this->z / 2;
+    return res;
+}
+
 // int main(int argc, char **argv) {
 //     Vector *v = new Vector(1,2,3);
 //     Vector v2(*v);

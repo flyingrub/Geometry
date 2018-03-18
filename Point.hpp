@@ -15,6 +15,7 @@ class Point {
         Point projectOnLine(Point b, Point c);
         Point projectOnLine(Vector bc, Point b);
         Point projectOnPlane(Point point, Vector normal);
+        double distance(Point other);
         Point operator*(double i);
         Point operator+(Point p);
 };

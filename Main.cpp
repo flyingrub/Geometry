@@ -19,6 +19,8 @@
 
 #include "Point.hpp"
 #include "Vector.hpp"
+#include "Voxel.hpp"
+#include "Utils.hpp"
 
 #define PI 3.14159265
 
@@ -65,12 +67,11 @@ GLvoid special_window_key(int key, int x, int y);
 
 Point camera = Point(1,1,1);
 
-
 int main(int argc, char **argv) {
 	// initialisation  des param�tres de GLUT en fonction
 	// des arguments sur la ligne de commande
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGBA);
+	glutInitDisplayMode(GLUT_RGB);
 
 	// d�finition et cr�ation de la fen�tre graphique, ainsi que son titre
 	glutInitWindowSize(WIDTH, HEIGHT);
@@ -98,15 +99,7 @@ int main(int argc, char **argv) {
 	return 1;
 }
 
-// initialisation du fond de la fen�tre graphique : noir opaque
-GLvoid initGL()
-{
-	glClearColor(RED, GREEN, BLUE, ALPHA);
-	glPointSize(5.0);
-}
-
 void lumiere() {
-	glEnable(GL_DEPTH_TEST); 	// Active le test de profondeur
 	glEnable(GL_LIGHTING); 	// Active l'éclairage
 	glEnable(GL_LIGHT0);
 	glEnable(GL_COLOR_MATERIAL);
@@ -124,17 +117,27 @@ void lumiere() {
 	glLightfv(GL_LIGHT0, GL_POSITION, position);
 }
 
+// initialisation du fond de la fen�tre graphique : noir opaque
+GLvoid initGL()
+{
+	glClearColor(RED, GREEN, BLUE, ALPHA);
+	glPointSize(5.0);
+	lumiere();
+}
+
 // Initialisation de la scene. Peut servir � stocker des variables devotre programme
 // � initialiser
 void init_scene()
 {
 	control_points = vector<Point>();
+
 }
 
 // fonction de call-back pour l�affichage dans la fen�tre
 
 GLvoid window_display()
 {
+	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
 
@@ -258,30 +261,6 @@ GLvoid window_key(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
-// UTILS
-double fact(int n) {
-	double factorial = 1;
-	for(int i = 1; i <=n; ++i) {
-		factorial *= i;
-	}
-	return factorial;
-}
-
-
-vector<vector<Point>> inverse(vector<vector<Point>> surface) {
-	vector<vector<Point>> controlLast;
-	for (int i=0; i < surface[0].size(); i++) {
-		vector<Point> line;
-		for (int j = 0; j < surface.size(); j++) {
-			Point controlPoint = surface[j][i];
-			line.push_back(controlPoint);
-		}
-		controlLast.push_back(line);
-	}
-	return controlLast;
-}
-
-
 vector<vector<Point>> surfaceCylindrique(vector<Point> bezier, Vector droite, int precision) {
 	vector<vector<Point>> res;
 	for (int i = 0; i<=precision; i++) {
@@ -370,58 +349,6 @@ Point* bezierCurveByBernstein(Point* controlPoints, long nbControlPoint, long pr
 		points[i] = p;
 	}
 	return points;
-}
-
-// HELPERS
-
-void drawPoint(Point p) {
-	glBegin(GL_POINTS);
-		glVertex3f(p.x, p.y, p.z);
-	glEnd();
-}
-
-void drawPoints(Point *points, long nbPoints) {
-	for (int i=0; i < nbPoints; i++) {
-		drawPoint(points[i]);
-	}
-}
-
-void drawLine(Point a, Point b) {
-	glBegin(GL_LINES);
-		glVertex3f(a.x, a.y, a.z);
-		glVertex3f(b.x, b.y, b.z);
-	glEnd();
-}
-
-void drawLine(Point a, Vector v) {
-	Point b;
-	b.x = a.x + v.x;
-	b.y = a.y + v.y;
-	b.z = a.z + v.z;
-	glBegin(GL_LINES);
-		glVertex3f(a.x, a.y, a.z);
-		glVertex3f(b.x, b.y, b.z);
-	glEnd();
-}
-
-void drawCurve(Point *points, long nbPoints) {
-	glBegin(GL_LINE_STRIP);
-	for (int i=0; i < nbPoints; i++) {
-		glVertex3f(points[i].x, points[i].y, points[i].z);
-	}
-	glEnd();
-}
-
-void drawControlPoints(vector<Point> points) {
-	glColor3f(1.0, 0, 0);
-	drawCurve(&points[0], points.size());
-	drawPoints(&points[0], points.size());
-}
-
-void drawSurface(vector<vector<Point>> surface) {
-	for (int i=0; i < surface.size(); i++) {
-		drawCurve(&surface[i][0], surface[i].size());
-	}
 }
 
 vector<vector<Point>> bezierSurfaceByCasteljau(vector<Point> controlDirectrice, vector<Point> controlGeneratrice, int precision) {
@@ -541,7 +468,6 @@ void displayCylindre(int rayon, int hauteur, int nbMeridien) {
 }
 
 void displaySphere(double rayon, double nbMeridien, double nbParallele)  {
-	lumiere();
 	vector<vector<Point>> sphere;
 	for (int j=0; j<nbMeridien; j++) {
 		double theta = 2.0 * PI / nbMeridien * j;
@@ -579,7 +505,6 @@ void displaySphere(double rayon, double nbMeridien, double nbParallele)  {
 	drawSurface(sphere);
 	drawSurface(inverse(sphere));
 }
-
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Fonction que vous allez modifier afin de dessiner
@@ -722,8 +647,10 @@ void tp1() {
 void render_scene()
 {
 	// Reset transformations
+	glEnable(GL_DEPTH_TEST); 	// Active le test de profondeur
+	glDepthFunc(GL_LESS);
 	glLoadIdentity();
-	gluPerspective(90.0f,(GLfloat)glutGet(GLUT_WINDOW_WIDTH)/(GLfloat)glutGet(GLUT_WINDOW_HEIGHT), 0.5f, 3000.0f);
+	gluPerspective(70.0f,(GLfloat)glutGet(GLUT_WINDOW_WIDTH)/(GLfloat)glutGet(GLUT_WINDOW_HEIGHT), 0.5f, 3000.0f);
 
 	// Set the camera
 	gluLookAt(camera.x,camera.y,camera.z, 0,0,0, 0,1,0);
@@ -747,8 +674,16 @@ void render_scene()
 	// render_surface_regle();
 	// render_surface_bezier();
 	// displayCylindre(1, 20, 10);
-	displayCone(1, 20, 10);
+	// displayCone(1, 20, 10);
 	// displaySphere(1,precision,precision2);
-	return;
+	// Voxel vox = Voxel(Point(0,0,0), 0.5);
+	// vox.display();
+	// Voxel::displaySphere(Point(0,0,0), 0.5, 3);
+	// Voxel::displayCylinder(Point(0,0,0), Vector(1,0,0), 0.5, 5);
+	Sphere s(Point(0,0,0), 0.5);
+	Cylinder c(Point(0,0,0), Vector(1,0,0), 0.4);
+	// Voxel::displayIntersection(s, c, 7);
+	// Voxel::displayUnion(s,c,7);
+	Voxel::displaySoustraction(s,c,7);
 }
 

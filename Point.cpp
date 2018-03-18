@@ -1,4 +1,5 @@
 #include "Point.hpp"
+#include <math.h>
 
 Point::Point() {
     this->x = 0;
@@ -68,3 +69,7 @@ Point Point::operator+(Point a) {
     return p;
 }
 
+double Point::distance(Point other) {
+    double temp = pow(other.x - this->x, 2) + pow(other.y - this->y, 2) + pow(other.z - this->z, 2);
+    return sqrt(temp);
+}

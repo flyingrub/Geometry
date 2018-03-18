@@ -19,4 +19,5 @@ class Vector {
         Vector vectoriel(const Vector v) const;
         double angle(const Vector v) const;
         void print();
+        Point middle(Point p);
 };
