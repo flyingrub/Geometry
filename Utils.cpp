@@ -113,15 +113,14 @@ OffFile* getOffSphere(double rayon, double nbMeridien, double nbParallele)  {
 			sphere.push_back(Point(x,y,z));
 		}
 	}
-
 	for (int i=0; i < nbMeridien; i++) {
 		for (int j=0; j<=nbParallele; j++) {
 			int k = (i == nbMeridien -1) ? 0 : i+1;
 			int l = (j == nbParallele) ? 0 : j+1;
-			int p1 = i+j;
-			int p2 = k+j;
-			int p3 = i+l;
-			int p4 = k+l;
+			int p1 = i * (nbParallele+1) +j;
+			int p2 = k * (nbParallele+1) +j;
+			int p3 = i * (nbParallele+1) +l;
+			int p4 = k * (nbParallele+1) +l;
 			triangles.push_back(TriangleCoord(p3,p2,p1));
 			triangles.push_back(TriangleCoord(p4,p2,p3));
 		}

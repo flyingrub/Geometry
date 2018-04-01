@@ -494,7 +494,6 @@ void displaySphere(double rayon, double nbMeridien, double nbParallele)  {
 		sphere.push_back(circle);
 	}
 	sphere.push_back(sphere[0]);
-
 	for (int i=0; i < sphere.size(); i++) {
 		for (int j=0; j<sphere[i].size(); j++) {
 			glBegin(GL_QUADS);
@@ -697,6 +696,6 @@ void render_scene()
 	// Voxel::displaySoustraction(s,c,7);
 	// render_tri();
 	// render_maillage(*getOffCylinder(1, 1, precision));
-	// render_maillage(*getOffSphere(1,precision, precision2));
+	render_maillage(*getOffSphere(1,precision, precision2));
 }
 

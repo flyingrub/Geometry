@@ -101,6 +101,12 @@ struct OffFile {
 		} else {
 			cout << "Unable to open file";
 		}
+	};
+
+	vector<float> normales() {
+		for (int i =0; i < nbTriangles; i++) {
+
+		}
 	}
 };
 
