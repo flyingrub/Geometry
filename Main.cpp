@@ -22,8 +22,6 @@
 #include "Voxel.hpp"
 #include "Utils.hpp"
 
-#define PI 3.14159265
-
 
 // D�finition de la taille de la fen�tre
 #define WIDTH  480
@@ -71,7 +69,7 @@ int main(int argc, char **argv) {
 	// initialisation  des param�tres de GLUT en fonction
 	// des arguments sur la ligne de commande
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH);
 
 	// d�finition et cr�ation de la fen�tre graphique, ainsi que son titre
 	glutInitWindowSize(WIDTH, HEIGHT);
@@ -100,9 +98,18 @@ int main(int argc, char **argv) {
 }
 
 void lumiere() {
+	glEnable(GL_DEPTH_TEST); 	// Active le test de profondeur
+	glDepthFunc(GL_LESS);
+
+
 	glEnable(GL_LIGHTING); 	// Active l'éclairage
 	glEnable(GL_LIGHT0);
 	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	glShadeModel(GL_SMOOTH);
+
+	glEnable(GL_CULL_FACE);
+
 
 	// Create light components.
 	GLfloat ambientLight[] = { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -140,6 +147,11 @@ GLvoid window_display()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
+	gluPerspective(60.0f,(GLfloat)glutGet(GLUT_WINDOW_WIDTH)/(GLfloat)glutGet(GLUT_WINDOW_HEIGHT), 0.5f, 3000.0f);
+
+	// Set the camera
+	gluLookAt(camera.x,camera.y,camera.z, 0,0,0, 0,1,0);
+
 
 	// C'est l'endroit o� l'on peut dessiner. On peut aussi faire appel
 	// � une fonction (render_scene() ici) qui contient les informations
@@ -644,16 +656,14 @@ void tp1() {
 	*/
 }
 
+void render_tri() {
+	OffFile off("triceratops.off");
+	render_maillage(off);
+}
+
+
 void render_scene()
 {
-	// Reset transformations
-	glEnable(GL_DEPTH_TEST); 	// Active le test de profondeur
-	glDepthFunc(GL_LESS);
-	glLoadIdentity();
-	gluPerspective(70.0f,(GLfloat)glutGet(GLUT_WINDOW_WIDTH)/(GLfloat)glutGet(GLUT_WINDOW_HEIGHT), 0.5f, 3000.0f);
-
-	// Set the camera
-	gluLookAt(camera.x,camera.y,camera.z, 0,0,0, 0,1,0);
 	//D�finition de la couleur
 	glColor3f(1.0, 1.0, 1.0);
 
@@ -680,10 +690,13 @@ void render_scene()
 	// vox.display();
 	// Voxel::displaySphere(Point(0,0,0), 0.5, 3);
 	// Voxel::displayCylinder(Point(0,0,0), Vector(1,0,0), 0.5, 5);
-	Sphere s(Point(0,0,0), 0.5);
-	Cylinder c(Point(0,0,0), Vector(1,0,0), 0.4);
+	// Sphere s(Point(0,0,0), 0.5);
+	// Cylinder c(Point(0,0,0), Vector(1,0,0), 0.4);
 	// Voxel::displayIntersection(s, c, 7);
 	// Voxel::displayUnion(s,c,7);
-	Voxel::displaySoustraction(s,c,7);
+	// Voxel::displaySoustraction(s,c,7);
+	// render_tri();
+	// render_maillage(*getOffCylinder(1, 1, precision));
+	// render_maillage(*getOffSphere(1,precision, precision2));
 }
 

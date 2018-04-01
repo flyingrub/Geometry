@@ -1,6 +1,7 @@
 #include "Utils.hpp"
 #include <GL/glut.h>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 
@@ -81,6 +82,85 @@ double randZeroToOne() {
 
 void randomColor() {
     glColor3f(randZeroToOne(), randZeroToOne(), randZeroToOne());
+}
+
+void render_maillage(OffFile off) {
+	glColor3f(1.0, 0, 0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 0, off.points);
+
+	glDrawElements(GL_TRIANGLES, off.nbTriangles*3, GL_UNSIGNED_INT, off.triangles);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	GLenum err;
+	while((err = glGetError()) != GL_NO_ERROR)
+	{
+		cout << "ERROR: " << err<< endl;
+	}
+}
+
+OffFile* getOffSphere(double rayon, double nbMeridien, double nbParallele)  {
+	vector<Point> sphere;
+	vector<TriangleCoord> triangles;
+
+	for (int j=0; j<nbMeridien; j++) {
+		double theta = 2.0 * PI / nbMeridien * j;
+		for (int i = 0; i <= nbParallele; i++) {
+			double phi = PI / nbParallele * i;
+			double x = sin(phi) * rayon * cos(theta);
+			double y = sin(phi) * rayon * sin(theta);
+			double z = cos(phi) * rayon;
+			sphere.push_back(Point(x,y,z));
+		}
+	}
+
+	for (int i=0; i < nbMeridien; i++) {
+		for (int j=0; j<=nbParallele; j++) {
+			int k = (i == nbMeridien -1) ? 0 : i+1;
+			int l = (j == nbParallele) ? 0 : j+1;
+			int p1 = i+j;
+			int p2 = k+j;
+			int p3 = i+l;
+			int p4 = k+l;
+			triangles.push_back(TriangleCoord(p3,p2,p1));
+			triangles.push_back(TriangleCoord(p4,p2,p3));
+		}
+	}
+	return new OffFile(sphere, triangles);
+}
+
+OffFile* getOffCylinder(int rayon, int hauteur, int nbMeridien) {
+	vector<Point> points;
+	vector<TriangleCoord> triangles;
+	for (int i = 0; i < nbMeridien; i++) {
+		float ang = 2 * PI / nbMeridien * i;
+		float x = cos(ang) * rayon;
+		float y = sin(ang) * rayon;
+		points.push_back(Point(x,y,0));
+	}
+	for (int i = 0; i < nbMeridien; i++) {
+		Point p = points[i];
+		points.push_back(Point(p.x, p.y,hauteur));
+	}
+	points.push_back(Point(0,0,0));
+	points.push_back(Point(0,0,hauteur));
+	for (int i = 0; i < nbMeridien; i++) {
+		int p1 = i;
+	 	int p2 = i + 1 == nbMeridien ? 0 : i + 1;
+		int p3 = nbMeridien * 2;
+		triangles.push_back(TriangleCoord(p1,p2,p3));
+		triangles.push_back(TriangleCoord(p1+nbMeridien,p2+nbMeridien,p3+1));
+	}
+
+	for (int i = 0; i < nbMeridien; i++) {
+		int p1 = i;
+		int p2 = i + 1 == nbMeridien ? 0 : i + 1;
+		int p3 = nbMeridien + i;
+		int p4 = i + 1 == nbMeridien ? nbMeridien : nbMeridien + i + 1;
+		triangles.push_back(TriangleCoord(p3,p2,p1));
+		triangles.push_back(TriangleCoord(p4,p2,p3));
+	}
+	return new OffFile(points, triangles);
 }
 
 
